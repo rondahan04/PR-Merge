@@ -140,14 +140,14 @@ export default function GamePage() {
         {/* timer */}
         <Timer
           duration={TIMER_SECONDS}
-          running={phase === 'playing' && !!currentSnippet}
+          running={phase === 'playing' && !!currentSnippet && !isFetching}
           onExpire={handleTimerExpire}
           onTick={handleTimerTick}
         />
 
         {/* card / reveal */}
         <AnimatePresence mode="wait">
-          {phase === 'playing' && currentSnippet && (
+          {phase === 'playing' && currentSnippet && !isFetching && (
             <SwipeCard
               key={currentSnippet.id}
               snippet={currentSnippet}

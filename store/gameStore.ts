@@ -93,8 +93,8 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
   },
 
   swipe(approved: boolean, secondsRemaining: number) {
-    const { currentSnippet, score, streak, history, cardIndex, correctCount, difficulty } = get()
-    if (!currentSnippet) return
+    const { currentSnippet, phase, score, streak, history, cardIndex, correctCount, difficulty } = get()
+    if (!currentSnippet || phase !== 'playing') return
 
     const isCorrect = approved === currentSnippet.is_good
     const { points, newStreak } = calculateScore(isCorrect, secondsRemaining, streak)

@@ -29,7 +29,7 @@ export default function ScoreBar({ score, streak, cardIndex, total = 10 }: Props
       <div className="text-center">
         <p className="text-xs text-white/40 uppercase tracking-widest">Card</p>
         <p className="text-lg font-bold text-white/60 font-mono">
-          {cardIndex}/{total}
+          {cardIndex + 1}/{total}
         </p>
       </div>
 
