@@ -13,15 +13,14 @@ interface Props {
 export default function SwipeCard({ snippet, onSwipe, disabled }: Props) {
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-200, 200], [-20, 20])
-  const approveOpacity = useTransform(x, [20, 120], [0, 1])
-  const rejectOpacity = useTransform(x, [-120, -20], [1, 0])
+  const greenOpacity = useTransform(x, [0, 160], [0, 0.45])
+  const redOpacity = useTransform(x, [-160, 0], [0.45, 0])
   const codeRef = useRef<HTMLElement>(null)
   const swipedRef = useRef(false)
 
   useEffect(() => {
     if (!codeRef.current) return
     import('prismjs').then((Prism) => {
-      // load the language
       const lang = snippet.language === 'javascript' ? 'javascript' :
                    snippet.language === 'python' ? 'python' : 'sql'
       const loadLang = () => {
@@ -59,22 +58,6 @@ export default function SwipeCard({ snippet, onSwipe, disabled }: Props) {
 
   return (
     <div className="relative w-[340px] select-none" style={{ touchAction: 'none' }}>
-      {/* approve label */}
-      <motion.div
-        style={{ opacity: approveOpacity }}
-        className="absolute top-6 left-6 z-10 rotate-[-12deg] border-4 border-green-400 text-green-400 font-black text-2xl px-3 py-1 rounded-lg pointer-events-none"
-      >
-        APPROVE
-      </motion.div>
-
-      {/* reject label */}
-      <motion.div
-        style={{ opacity: rejectOpacity }}
-        className="absolute top-6 right-6 z-10 rotate-[12deg] border-4 border-red-400 text-red-400 font-black text-2xl px-3 py-1 rounded-lg pointer-events-none"
-      >
-        REJECT
-      </motion.div>
-
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
@@ -82,40 +65,58 @@ export default function SwipeCard({ snippet, onSwipe, disabled }: Props) {
         style={{
           x,
           rotate,
-          background: 'rgba(255,255,255,0.06)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(28px)',
+          WebkitBackdropFilter: 'blur(28px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)',
         }}
         onDragEnd={handleDragEnd}
         whileDrag={{ cursor: 'grabbing' }}
-        className="cursor-grab rounded-2xl overflow-hidden"
+        className="cursor-grab rounded-2xl overflow-hidden relative"
       >
-        {/* header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-          <span className="text-xs font-mono text-white/50 uppercase tracking-widest">{langLabel}</span>
-          {snippet.recycled && (
-            <span className="text-xs text-white/40">♻ recycled</span>
-          )}
-        </div>
+        {/* base glass layer */}
+        <div className="absolute inset-0 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', zIndex: 0 }} />
 
-        {/* code */}
-        <div className="overflow-auto max-h-64 p-4">
-          <pre className="text-sm leading-relaxed m-0">
-            <code
-              ref={codeRef}
-              className={`language-${snippet.language === 'javascript' ? 'javascript' : snippet.language === 'python' ? 'python' : 'sql'}`}
-            >
-              {snippet.snippet}
-            </code>
-          </pre>
+        {/* green tint — swipe right */}
+        <motion.div
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{ background: 'rgb(34,197,94)', opacity: greenOpacity, zIndex: 1 }}
+        />
+
+        {/* red tint — swipe left */}
+        <motion.div
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{ background: 'rgb(239,68,68)', opacity: redOpacity, zIndex: 1 }}
+        />
+
+        {/* content sits above color overlays */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          {/* header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
+            <span className="text-xs font-mono text-white/40 uppercase tracking-widest">{langLabel}</span>
+            {snippet.recycled && (
+              <span className="text-xs text-white/30 font-light tracking-wide">recycled</span>
+            )}
+          </div>
+
+          {/* code — wraps to fit, no scroll */}
+          <div className="p-4">
+            <pre className="text-sm leading-relaxed m-0" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+              <code
+                ref={codeRef}
+                className={`language-${snippet.language === 'javascript' ? 'javascript' : snippet.language === 'python' ? 'python' : 'sql'}`}
+              >
+                {snippet.snippet}
+              </code>
+            </pre>
+          </div>
         </div>
       </motion.div>
 
       {/* swipe hints */}
-      <div className="flex justify-between mt-4 px-2 text-xs text-white/30">
-        <span>← REJECT</span>
-        <span>APPROVE →</span>
+      <div className="flex justify-between mt-4 px-2 text-xs text-white/25 font-light tracking-widest uppercase">
+        <span>← Reject</span>
+        <span>Approve →</span>
       </div>
     </div>
   )

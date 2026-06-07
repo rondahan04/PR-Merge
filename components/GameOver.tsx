@@ -1,11 +1,21 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
 
+const glassCard = {
+  background: 'rgba(255,255,255,0.04)',
+  backdropFilter: 'blur(24px)',
+  WebkitBackdropFilter: 'blur(24px)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  boxShadow: '0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
+} as const
+
 export default function GameOver() {
-  const { score, correctCount, history, language, leaderboard, addLeaderboardEntry, resetGame } =
+  const router = useRouter()
+  const { score, correctCount, history, language, difficulty, isCodeBotMode, leaderboard, addLeaderboardEntry, resetGame, startGame } =
     useGameStore()
   const [name, setName] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -26,51 +36,36 @@ export default function GameOver() {
       className="w-[340px] space-y-4"
     >
       {/* score card */}
-      <div
-        className="rounded-2xl p-6 text-center"
-        style={{
-          background: 'rgba(255,255,255,0.06)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255,255,255,0.12)',
-        }}
-      >
-        <p className="text-xs text-white/40 uppercase tracking-widest mb-2">Final Score</p>
+      <div className="rounded-2xl p-6 text-center" style={glassCard}>
+        <p className="text-xs text-white/40 uppercase tracking-widest mb-2 font-medium">Final Score</p>
         <motion.p
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', delay: 0.2 }}
-          className="text-6xl font-black text-white font-mono mb-4"
+          className="text-6xl font-bold text-white font-mono mb-4"
         >
           {score.toLocaleString()}
         </motion.p>
         <div className="flex justify-center gap-8 text-sm text-white/60">
           <div>
-            <p className="text-xs uppercase tracking-widest text-white/30">Accuracy</p>
-            <p className="font-bold text-white/80">{accuracy}%</p>
+            <p className="text-xs uppercase tracking-widest text-white/30 font-medium">Accuracy</p>
+            <p className="font-semibold text-white/80">{accuracy}%</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-widest text-white/30">Correct</p>
-            <p className="font-bold text-white/80">{correctCount}/{history.length}</p>
+            <p className="text-xs uppercase tracking-widest text-white/30 font-medium">Correct</p>
+            <p className="font-semibold text-white/80">{correctCount}/{history.length}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-widest text-white/30">Lang</p>
-            <p className="font-bold text-white/80 capitalize">{language}</p>
+            <p className="text-xs uppercase tracking-widest text-white/30 font-medium">Lang</p>
+            <p className="font-semibold text-white/80 capitalize">{language}</p>
           </div>
         </div>
       </div>
 
       {/* leaderboard entry */}
       {!submitted ? (
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl p-4"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255,255,255,0.12)',
-          }}
-        >
-          <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Add to Leaderboard</p>
+        <form onSubmit={handleSubmit} className="rounded-2xl p-4" style={glassCard}>
+          <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Add to Leaderboard</p>
           <div className="flex gap-2">
             <input
               type="text"
@@ -78,12 +73,16 @@ export default function GameOver() {
               onChange={(e) => setName(e.target.value.slice(0, 20))}
               placeholder="Your nickname"
               maxLength={20}
-              className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none border border-white/10 focus:border-green-400/50"
+              className="flex-1 rounded-lg px-3 py-2 text-white text-sm outline-none font-light"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
             />
             <button
               type="submit"
               disabled={!name.trim()}
-              className="px-4 py-2 rounded-lg font-bold text-sm disabled:opacity-30"
+              className="px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-30 cursor-pointer transition-transform hover:scale-[1.05] active:scale-[0.97]"
               style={{ background: '#22c55e', color: '#000' }}
             >
               Add
@@ -92,22 +91,15 @@ export default function GameOver() {
         </form>
       ) : (
         leaderboard.length > 0 && (
-          <div
-            className="rounded-2xl p-4"
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}
-          >
-            <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Leaderboard</p>
+          <div className="rounded-2xl p-4" style={glassCard}>
+            <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Leaderboard</p>
             <div className="space-y-2">
               {leaderboard.slice(0, 5).map((entry, i) => (
                 <div key={entry.timestamp} className="flex items-center gap-3 text-sm">
-                  <span className="text-white/30 font-mono w-5">{i + 1}.</span>
-                  <span className="flex-1 text-white/80 truncate">{entry.name}</span>
+                  <span className="text-white/30 font-mono w-5 font-light">{i + 1}.</span>
+                  <span className="flex-1 text-white/75 truncate font-light">{entry.name}</span>
                   <span className="font-mono font-bold text-white">{entry.score.toLocaleString()}</span>
-                  <span className="text-white/40 text-xs">{entry.accuracy}%</span>
+                  <span className="text-white/40 text-xs font-light">{entry.accuracy}%</span>
                 </div>
               ))}
             </div>
@@ -115,13 +107,32 @@ export default function GameOver() {
         )
       )}
 
-      <button
-        onClick={resetGame}
-        className="w-full py-3 rounded-2xl font-black text-sm tracking-widest uppercase"
-        style={{ background: 'rgba(255,255,255,0.08)', color: 'white', border: '1px solid rgba(255,255,255,0.15)' }}
-      >
-        Play Again
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => startGame(language, difficulty, isCodeBotMode)}
+          className="flex-1 py-3 rounded-2xl font-semibold text-sm tracking-widest uppercase cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.97]"
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            color: 'rgba(255,255,255,0.8)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          Play Again
+        </button>
+        <button
+          onClick={() => { resetGame(); router.push('/') }}
+          className="flex-1 py-3 rounded-2xl font-semibold text-sm tracking-widest uppercase cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.97]"
+          style={{
+            background: 'rgba(99,102,241,0.1)',
+            color: 'rgba(165,180,252,0.9)',
+            border: '1px solid rgba(99,102,241,0.3)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          Home
+        </button>
+      </div>
     </motion.div>
   )
 }

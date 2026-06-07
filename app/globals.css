@@ -1,13 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0d0d0d;
   --foreground: #ffffff;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
 }
 
 * {
@@ -15,9 +9,8 @@
 }
 
 body {
-  background: var(--background);
+  background: #050816;
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

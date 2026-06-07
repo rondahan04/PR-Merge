@@ -112,28 +112,22 @@ export default function GamePage() {
 
   if (phase === 'idle') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0d0d0d' }}>
-        <p className="text-white/40">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-white/40 font-light tracking-wide">Loading...</p>
       </div>
     )
   }
 
   if (phase === 'gameover') {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
-        style={{ background: '#0d0d0d' }}
-      >
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
         <GameOver />
       </div>
     )
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
-      style={{ background: '#0d0d0d' }}
-    >
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
       <ScoreBar score={score} streak={streak} cardIndex={cardIndex} />
 
       <div className="flex flex-col items-center gap-6">
@@ -161,11 +155,12 @@ export default function GamePage() {
               key="loading"
               className="w-[340px] h-48 rounded-2xl flex items-center justify-center"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.03)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
-              <p className="text-white/30 text-sm">Fetching next card...</p>
+              <p className="text-white/30 text-sm font-light tracking-wide">Fetching next card...</p>
             </div>
           )}
 
