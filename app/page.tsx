@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
 import type { Language, Difficulty } from '@/store/gameStore'
+import LiquidGlass from 'liquid-glass-react'
 
 const LANGUAGES: { value: Language; label: string; icon: string }[] = [
   { value: 'javascript', label: 'JavaScript', icon: 'JS' },
   { value: 'python', label: 'Python', icon: 'PY' },
   { value: 'sql', label: 'SQL', icon: 'SQL' },
+  { value: 'java', label: 'Java', icon: 'JV' },
 ]
 
 const DIFFICULTIES: { value: Difficulty; label: string; desc: string }[] = [
@@ -29,6 +31,14 @@ function BotIcon() {
     </svg>
   )
 }
+
+const glassAbsolute = (extraStyle: React.CSSProperties = {}): React.CSSProperties => ({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  width: '100%',
+  ...extraStyle,
+})
 
 export default function Home() {
   const router = useRouter()
@@ -51,11 +61,12 @@ export default function Home() {
       >
         {/* title */}
         <div className="text-center mb-8">
-          <div style={{ filter: 'drop-shadow(0 0 32px rgba(99,102,241,0.45))' }}>
+          <div style={{ filter: 'drop-shadow(0 0 32px rgba(124,58,237,0.5))' }}>
             <h1
               className="text-6xl font-bold tracking-tight mb-3"
               style={{
-                background: 'linear-gradient(135deg, #e0e7ff 0%, #a5b4fc 35%, #c4b5fd 65%, #67e8f9 100%)',
+                display: 'inline-block',
+                background: 'linear-gradient(135deg, #ede9fe 0%, #c4b5fd 35%, #a78bfa 65%, #7c3aed 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -73,22 +84,38 @@ export default function Home() {
         {/* language selector */}
         <div>
           <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Language</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {LANGUAGES.map(({ value, label, icon }) => (
-              <button
-                key={value}
-                onClick={() => setLanguage(value)}
-                className="py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer hover:scale-[1.04]"
-                style={{
-                  background: language === value ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${language === value ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.08)'}`,
-                  color: language === value ? '#a5b4fc' : 'rgba(255,255,255,0.5)',
-                  backdropFilter: 'blur(12px)',
-                }}
-              >
-                <span className="block text-base font-bold font-mono">{icon}</span>
-                <span className="block text-xs mt-0.5 font-light">{label}</span>
-              </button>
+              <div key={value} className="relative" style={{ minHeight: '72px' }}>
+                <LiquidGlass
+                  cornerRadius={10}
+                  onClick={() => setLanguage(value)}
+                  padding="12px 6px"
+                  className="[&_.glass]:w-full cursor-pointer"
+                  style={glassAbsolute()}
+                >
+                  <div className="text-center w-full">
+                    <span
+                      className="block text-base font-bold font-mono"
+                      style={{ color: language === value ? '#c4b5fd' : 'rgba(255,255,255,0.5)' }}
+                    >
+                      {icon}
+                    </span>
+                    <span
+                      className="block text-xs mt-0.5 font-light"
+                      style={{ color: language === value ? '#c4b5fd' : 'rgba(255,255,255,0.4)' }}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                </LiquidGlass>
+                {language === value && (
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ borderRadius: '10px', background: 'rgba(139,92,246,0.22)' }}
+                  />
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -98,81 +125,97 @@ export default function Home() {
           <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Difficulty</p>
           <div className="space-y-2">
             {DIFFICULTIES.map(({ value, label, desc }) => (
-              <button
-                key={value}
-                onClick={() => setDifficulty(value)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer hover:scale-[1.02]"
-                style={{
-                  background: difficulty === value ? 'rgba(99,102,241,0.14)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${difficulty === value ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.07)'}`,
-                  backdropFilter: 'blur(12px)',
-                }}
-              >
-                <span
-                  className="font-semibold text-sm"
-                  style={{ color: difficulty === value ? '#a5b4fc' : 'rgba(255,255,255,0.65)' }}
+              <div key={value} className="relative" style={{ minHeight: '48px' }}>
+                <LiquidGlass
+                  cornerRadius={10}
+                  onClick={() => setDifficulty(value)}
+                  padding="10px 14px"
+                  className="[&_.glass]:w-full cursor-pointer"
+                  style={glassAbsolute()}
                 >
-                  {label}
-                </span>
-                <span className="text-xs text-white/30 font-light">{desc}</span>
-              </button>
+                  <div className="flex items-center justify-center gap-2 w-full">
+                    <span
+                      className="font-semibold text-sm"
+                      style={{ color: difficulty === value ? '#c4b5fd' : 'rgba(255,255,255,0.65)' }}
+                    >
+                      {label}
+                    </span>
+                    <span className="text-xs text-white/30 font-light">{desc}</span>
+                  </div>
+                </LiquidGlass>
+                {difficulty === value && (
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ borderRadius: '10px', background: 'rgba(139,92,246,0.22)' }}
+                  />
+                )}
+              </div>
             ))}
           </div>
         </div>
 
         {/* codebot toggle */}
-        <div>
-          <button
+        <div className="relative" style={{ minHeight: '64px' }}>
+          {codeBotMode && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ borderRadius: '10px', background: 'rgba(139,92,246,0.22)', zIndex: 1 }}
+            />
+          )}
+          <LiquidGlass
+            cornerRadius={10}
             onClick={() => setCodeBotMode((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer"
-            style={{
-              background: codeBotMode ? 'rgba(139,92,246,0.14)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${codeBotMode ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.07)'}`,
-              backdropFilter: 'blur(12px)',
-            }}
+            padding="10px 14px"
+            className="[&_.glass]:w-full cursor-pointer"
+            style={glassAbsolute()}
           >
-            <div className="flex items-center gap-2.5 text-left">
-              <span style={{ color: codeBotMode ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}>
-                <BotIcon />
-              </span>
-              <div>
-                <p
-                  className="font-semibold text-sm"
-                  style={{ color: codeBotMode ? '#a78bfa' : 'rgba(255,255,255,0.6)' }}
-                >
-                  Battle Royale
-                </p>
-                <p className="text-xs text-white/30 mt-0.5 font-light">Battle an AI opponent</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-left">
+                <span style={{ color: codeBotMode ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}>
+                  <BotIcon />
+                </span>
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: codeBotMode ? '#a78bfa' : 'rgba(255,255,255,0.6)' }}>
+                    Battle Royale
+                  </p>
+                  <p className="text-xs text-white/30 mt-0.5 font-light">Battle an AI opponent</p>
+                </div>
+              </div>
+              <div
+                className="w-10 h-6 rounded-full relative transition-all"
+                style={{ background: codeBotMode ? '#8b5cf6' : 'rgba(255,255,255,0.1)' }}
+              >
+                <div
+                  className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
+                  style={{ left: codeBotMode ? '1.5rem' : '0.25rem' }}
+                />
               </div>
             </div>
-            <div
-              className="w-10 h-6 rounded-full relative transition-all"
-              style={{ background: codeBotMode ? '#8b5cf6' : 'rgba(255,255,255,0.1)' }}
-            >
-              <div
-                className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
-                style={{ left: codeBotMode ? '1.5rem' : '0.25rem' }}
-              />
-            </div>
-          </button>
+          </LiquidGlass>
         </div>
 
         {/* start */}
-        <motion.button
+        <motion.div
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={handleStart}
-          className="w-full py-4 rounded-2xl font-semibold text-base tracking-widest uppercase cursor-pointer"
-          style={{
-            background: 'rgba(99,102,241,0.12)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(99,102,241,0.4)',
-            color: '#c7d2fe',
-            boxShadow: '0 0 24px rgba(99,102,241,0.15)',
-          }}
+          className="relative cursor-pointer"
+          style={{ minHeight: '56px' }}
         >
-          Start Review
-        </motion.button>
+          <LiquidGlass
+            cornerRadius={14}
+            padding="14px"
+            className="[&_.glass]:w-full"
+            style={glassAbsolute()}
+          >
+            <span
+              className="block text-center font-semibold text-base tracking-widest uppercase"
+              style={{ color: '#ddd6fe' }}
+            >
+              Start Review
+            </span>
+          </LiquidGlass>
+        </motion.div>
 
         <p className="text-center text-xs text-white/20 font-light tracking-wide">10 cards · 15 seconds each</p>
       </motion.div>

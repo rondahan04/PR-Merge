@@ -15,7 +15,7 @@ const MODEL = process.env.OPENAI_MODEL ?? 'gpt-4.5'
 
 const SnippetSchema = z.object({
   snippet: z.string(),
-  language: z.enum(['javascript', 'python', 'sql']),
+  language: z.enum(['javascript', 'python', 'sql', 'java']),
   is_good: z.boolean(),
   issues: z.array(z.string()),
   explanation: z.string(),

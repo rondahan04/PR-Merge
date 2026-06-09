@@ -5,7 +5,7 @@ import { computeCodeBotDecision } from '@/lib/codebot'
 export interface Snippet {
   id: string
   snippet: string
-  language: 'javascript' | 'python' | 'sql'
+  language: 'javascript' | 'python' | 'sql' | 'java'
   is_good: boolean
   issues: string[]
   explanation: string
@@ -16,12 +16,12 @@ export interface LeaderboardEntry {
   name: string
   score: number
   accuracy: number
-  language: 'javascript' | 'python' | 'sql'
+  language: 'javascript' | 'python' | 'sql' | 'java'
   timestamp: number
 }
 
 export type Difficulty = 'junior' | 'mid' | 'senior'
-export type Language = 'javascript' | 'python' | 'sql'
+export type Language = 'javascript' | 'python' | 'sql' | 'java'
 export type Phase = 'idle' | 'playing' | 'revealing' | 'gameover'
 
 interface GameState {

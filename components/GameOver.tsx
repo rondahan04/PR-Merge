@@ -5,13 +5,24 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
 
-const glassCard = {
+const glassCard: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
   backdropFilter: 'blur(24px)',
   WebkitBackdropFilter: 'blur(24px)',
   border: '1px solid rgba(255,255,255,0.1)',
   boxShadow: '0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
-} as const
+  borderRadius: '16px',
+  overflow: 'hidden',
+}
+
+const glassButton: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  backdropFilter: 'blur(24px)',
+  WebkitBackdropFilter: 'blur(24px)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  boxShadow: '0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
+  borderRadius: '16px',
+}
 
 export default function GameOver() {
   const router = useRouter()
@@ -36,7 +47,7 @@ export default function GameOver() {
       className="w-[340px] space-y-4"
     >
       {/* score card */}
-      <div className="rounded-2xl p-6 text-center" style={glassCard}>
+      <div style={{ ...glassCard, padding: '24px', textAlign: 'center' }}>
         <p className="text-xs text-white/40 uppercase tracking-widest mb-2 font-medium">Final Score</p>
         <motion.p
           initial={{ scale: 0.5, opacity: 0 }}
@@ -64,34 +75,36 @@ export default function GameOver() {
 
       {/* leaderboard entry */}
       {!submitted ? (
-        <form onSubmit={handleSubmit} className="rounded-2xl p-4" style={glassCard}>
+        <div style={{ ...glassCard, padding: '16px' }}>
           <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Add to Leaderboard</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value.slice(0, 20))}
-              placeholder="Your nickname"
-              maxLength={20}
-              className="flex-1 rounded-lg px-3 py-2 text-white text-sm outline-none font-light"
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}
-            />
-            <button
-              type="submit"
-              disabled={!name.trim()}
-              className="px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-30 cursor-pointer transition-transform hover:scale-[1.05] active:scale-[0.97]"
-              style={{ background: '#22c55e', color: '#000' }}
-            >
-              Add
-            </button>
-          </div>
-        </form>
+          <form onSubmit={handleSubmit}>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value.slice(0, 20))}
+                placeholder="Your nickname"
+                maxLength={20}
+                className="flex-1 rounded-lg px-3 py-2 text-white text-sm outline-none font-light"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              />
+              <button
+                type="submit"
+                disabled={!name.trim()}
+                className="px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-30 cursor-pointer transition-transform hover:scale-[1.05] active:scale-[0.97]"
+                style={{ background: '#22c55e', color: '#000' }}
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </div>
       ) : (
         leaderboard.length > 0 && (
-          <div className="rounded-2xl p-4" style={glassCard}>
+          <div style={{ ...glassCard, padding: '16px' }}>
             <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Leaderboard</p>
             <div className="space-y-2">
               {leaderboard.slice(0, 5).map((entry, i) => (
@@ -110,27 +123,24 @@ export default function GameOver() {
       <div className="flex gap-2">
         <button
           onClick={() => startGame(language, difficulty, isCodeBotMode)}
-          className="flex-1 py-3 rounded-2xl font-semibold text-sm tracking-widest uppercase cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.97]"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            color: 'rgba(255,255,255,0.8)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            backdropFilter: 'blur(12px)',
-          }}
+          className="flex-1 py-3 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.97]"
+          style={glassButton}
         >
-          Play Again
+          <span className="block text-center font-semibold text-sm tracking-widest uppercase text-white/80">
+            Play Again
+          </span>
         </button>
         <button
           onClick={() => { resetGame(); router.push('/') }}
-          className="flex-1 py-3 rounded-2xl font-semibold text-sm tracking-widest uppercase cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.97]"
-          style={{
-            background: 'rgba(99,102,241,0.1)',
-            color: 'rgba(165,180,252,0.9)',
-            border: '1px solid rgba(99,102,241,0.3)',
-            backdropFilter: 'blur(12px)',
-          }}
+          className="flex-1 py-3 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.97]"
+          style={{ ...glassButton, border: '1px solid rgba(124,58,237,0.4)' }}
         >
-          Home
+          <span
+            className="block text-center font-semibold text-sm tracking-widest uppercase"
+            style={{ color: 'rgba(196,181,253,0.9)' }}
+          >
+            Home
+          </span>
         </button>
       </div>
     </motion.div>

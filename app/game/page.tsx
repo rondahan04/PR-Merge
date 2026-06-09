@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
 import SwipeCard from '@/components/SwipeCard'
@@ -13,6 +14,7 @@ import type { Snippet } from '@/store/gameStore'
 const TIMER_SECONDS = 15
 
 export default function GamePage() {
+  const router = useRouter()
   const {
     phase,
     score,
@@ -110,13 +112,11 @@ export default function GamePage() {
     return () => clearTimeout(t)
   }, [phase, handleRevealContinue])
 
-  if (phase === 'idle') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-white/40 font-light tracking-wide">Loading...</p>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (phase === 'idle') router.replace('/')
+  }, [phase, router])
+
+  if (phase === 'idle') return null
 
   if (phase === 'gameover') {
     return (

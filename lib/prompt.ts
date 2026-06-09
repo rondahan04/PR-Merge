@@ -1,4 +1,4 @@
-type Language = 'javascript' | 'python' | 'sql'
+type Language = 'javascript' | 'python' | 'sql' | 'java'
 type Difficulty = 'junior' | 'mid' | 'senior'
 
 const DIFFICULTY_DESC: Record<Difficulty, string> = {
@@ -14,7 +14,7 @@ const GOOD_DIFFICULTY_DESC: Record<Difficulty, string> = {
 }
 
 export function buildPrompt(language: Language, difficulty: Difficulty, isGood: boolean): string {
-  const lang = language === 'javascript' ? 'JavaScript/TypeScript' : language === 'python' ? 'Python' : 'SQL'
+  const lang = language === 'javascript' ? 'JavaScript/TypeScript' : language === 'python' ? 'Python' : language === 'sql' ? 'SQL' : 'Java'
   const desc = isGood ? GOOD_DIFFICULTY_DESC[difficulty] : DIFFICULTY_DESC[difficulty]
   const target = isGood ? 'CLEAN, correct, secure' : 'BAD, containing a real security flaw or bug'
 

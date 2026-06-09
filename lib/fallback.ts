@@ -1,7 +1,7 @@
 export interface Snippet {
   id: string
   snippet: string
-  language: 'javascript' | 'python' | 'sql'
+  language: 'javascript' | 'python' | 'sql' | 'java'
   is_good: boolean
   issues: string[]
   explanation: string
@@ -229,6 +229,73 @@ WHERE username = 'admin' --' AND password = 'anything'`,
     is_good: false,
     issues: ['SQL comment injection bypassing authentication'],
     explanation: "The `--` starts a SQL comment, ignoring the password check entirely. This logs in as any user by knowing only their username. Authentication queries must use parameterized inputs, never string interpolation.",
+  },
+  {
+    snippet: `public User getUser(String userId) throws SQLException {
+    String query = "SELECT * FROM users WHERE id = '" + userId + "'";
+    Statement stmt = conn.createStatement();
+    ResultSet rs = stmt.executeQuery(query);
+    return mapRow(rs);
+}`,
+    language: 'java',
+    is_good: false,
+    issues: ['SQL injection via string concatenation'],
+    explanation: '`userId` is concatenated directly into the SQL string. An attacker passes `\' OR \'1\'=\'1` to dump all users. Use `PreparedStatement` with `?` placeholders instead.',
+  },
+  {
+    snippet: `public class Config {
+    public static final String DB_PASSWORD = "s3cur3P@ss!";
+    public static final String JWT_SECRET  = "my-jwt-secret-key";
+}`,
+    language: 'java',
+    is_good: false,
+    issues: ['Hardcoded credentials in source code'],
+    explanation: 'Secrets committed to source are visible in git history forever. Load them from environment variables or a secrets manager: `System.getenv("DB_PASSWORD")`.',
+  },
+  {
+    snippet: `ObjectInputStream ois = new ObjectInputStream(
+    request.getInputStream()
+);
+Object obj = ois.readObject();`,
+    language: 'java',
+    is_good: false,
+    issues: ['Unsafe Java deserialization from untrusted input'],
+    explanation: '`ObjectInputStream.readObject()` on untrusted data can trigger arbitrary code execution via gadget chains. Use JSON/protobuf for external data, or apply a serialization filter (`ObjectInputFilter`).',
+  },
+  {
+    snippet: `DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+dbf.setFeature(
+    "http://apache.org/xml/features/disallow-doctype-decl", true
+);
+Document doc = dbf.newDocumentBuilder().parse(input);`,
+    language: 'java',
+    is_good: true,
+    issues: [],
+    explanation: 'XXE is disabled by setting `disallow-doctype-decl` to `true`. Without this, a crafted XML payload can read local files or trigger SSRF via external entity references.',
+  },
+  {
+    snippet: `public User getUser(long userId) throws SQLException {
+    PreparedStatement ps = conn.prepareStatement(
+        "SELECT id, name, email FROM users WHERE id = ?"
+    );
+    ps.setLong(1, userId);
+    ResultSet rs = ps.executeQuery();
+    return rs.next() ? mapRow(rs) : null;
+}`,
+    language: 'java',
+    is_good: true,
+    issues: [],
+    explanation: '`PreparedStatement` with a `?` placeholder prevents SQL injection — the driver escapes `userId` regardless of its value. Only necessary columns are selected, not `SELECT *`.',
+  },
+  {
+    snippet: `MessageDigest md = MessageDigest.getInstance("MD5");
+byte[] hash = md.digest(password.getBytes());
+String hex = HexFormat.of().formatHex(hash);
+userRepo.save(username, hex);`,
+    language: 'java',
+    is_good: false,
+    issues: ['Weak password hashing with MD5 (no salt)'],
+    explanation: 'MD5 is broken for passwords: it is fast (easy to brute-force) and unsalted (vulnerable to rainbow tables). Use `BCrypt`, `PBKDF2`, or `Argon2` via a library like Spring Security Crypto.',
   },
 ]
 
