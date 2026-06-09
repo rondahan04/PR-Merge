@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import { zodResponseFormat } from 'openai/helpers/zod'
 import { z } from 'zod'
 import { checkRateLimit } from '@/lib/rateLimit'
-import { getFromFallbackBank } from '@/lib/fallback'
+import { getFromFallbackBank, type FallbackLanguage } from '@/lib/fallback'
 import { buildPrompt } from '@/lib/prompt'
 
 let _client: OpenAI | null = null
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       recycled: false,
     })
   } catch {
-    const fallback = getFromFallbackBank()
+    const fallback = getFromFallbackBank(language as FallbackLanguage)
     return NextResponse.json(fallback)
   }
 }

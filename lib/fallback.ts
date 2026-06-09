@@ -299,23 +299,30 @@ userRepo.save(username, hex);`,
   },
 ]
 
-let usedIndices = new Set<number>()
+export type FallbackLanguage = 'javascript' | 'python' | 'sql' | 'java'
 
-export function getFromFallbackBank(): Snippet & { recycled: boolean } {
-  if (usedIndices.size >= BANK.length) usedIndices = new Set()
+const usedIndicesMap = new Map<string, Set<number>>()
 
-  const available = BANK.map((_, i) => i).filter((i) => !usedIndices.has(i))
+export function getFromFallbackBank(language?: FallbackLanguage): Snippet & { recycled: boolean } {
+  const key = language ?? 'all'
+  const pool = language ? BANK.filter((s) => s.language === language) : BANK
+  const src = pool.length > 0 ? pool : BANK
+
+  if (!usedIndicesMap.has(key)) usedIndicesMap.set(key, new Set())
+  let used = usedIndicesMap.get(key)!
+  if (used.size >= src.length) { used = new Set(); usedIndicesMap.set(key, used) }
+
+  const available = src.map((_, i) => i).filter((i) => !used.has(i))
   const idx = available[Math.floor(Math.random() * available.length)]
-  usedIndices.add(idx)
+  used.add(idx)
 
-  const recycled = usedIndices.size <= BANK.length && usedIndices.size > BANK.length - available.length
   return {
-    ...BANK[idx],
-    id: `fallback-${idx}`,
-    recycled: usedIndices.size === 1 && available.length < BANK.length,
+    ...src[idx],
+    id: `fallback-${key}-${idx}`,
+    recycled: used.size === 1 && available.length < src.length,
   }
 }
 
 export function resetFallbackBank() {
-  usedIndices = new Set()
+  usedIndicesMap.clear()
 }

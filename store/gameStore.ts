@@ -80,14 +80,16 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
 
   startGame(language, difficulty, codeBotMode) {
     const { currentSnippet, nextSnippet } = get()
+    const matchingCurrent = currentSnippet?.language === language ? currentSnippet : null
+    const matchingNext = nextSnippet?.language === language ? nextSnippet : null
     set({
       ...initial,
       language,
       difficulty,
       phase: 'playing',
       isCodeBotMode: codeBotMode,
-      currentSnippet: currentSnippet ?? null,
-      nextSnippet: nextSnippet ?? null,
+      currentSnippet: matchingCurrent,
+      nextSnippet: matchingNext,
     })
   },
 
