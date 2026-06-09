@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
-import type { Language, Difficulty } from '@/store/gameStore'
+import type { Language, Difficulty, Snippet } from '@/store/gameStore'
 import LiquidGlass from 'liquid-glass-react'
 
 const LANGUAGES: { value: Language; label: string; icon: string }[] = [
@@ -40,12 +40,44 @@ const glassAbsolute = (extraStyle: React.CSSProperties = {}): React.CSSPropertie
   ...extraStyle,
 })
 
+async function fetchSnippet(language: Language, difficulty: Difficulty): Promise<Snippet | null> {
+  try {
+    const res = await fetch('/api/generate-snippet', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-secret': process.env.NEXT_PUBLIC_API_SECRET ?? '',
+      },
+      body: JSON.stringify({ language, difficulty }),
+    })
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
+}
+
 export default function Home() {
   const router = useRouter()
-  const { startGame } = useGameStore()
+  const { startGame, setPrefetched } = useGameStore()
   const [language, setLanguage] = useState<Language>('javascript')
   const [difficulty, setDifficulty] = useState<Difficulty>('junior')
   const [codeBotMode, setCodeBotMode] = useState(false)
+  const prefetchRef = useRef<{ language: Language; difficulty: Difficulty } | null>(null)
+
+  const prefetch = useCallback((lang: Language, diff: Difficulty) => {
+    if (prefetchRef.current?.language === lang && prefetchRef.current?.difficulty === diff) return
+    prefetchRef.current = { language: lang, difficulty: diff }
+    Promise.all([fetchSnippet(lang, diff), fetchSnippet(lang, diff)]).then(([a, b]) => {
+      if (prefetchRef.current?.language === lang && prefetchRef.current?.difficulty === diff) {
+        setPrefetched([a, b])
+      }
+    })
+  }, [setPrefetched])
+
+  useEffect(() => {
+    prefetch(language, difficulty)
+  }, [language, difficulty, prefetch])
 
   const handleStart = () => {
     startGame(language, difficulty, codeBotMode)

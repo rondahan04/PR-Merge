@@ -46,6 +46,7 @@ interface GameActions {
   startGame: (language: Language, difficulty: Difficulty, codeBotMode: boolean) => void
   setCurrentSnippet: (snippet: Snippet) => void
   setNextSnippet: (snippet: Snippet | null) => void
+  setPrefetched: (snippets: [Snippet | null, Snippet | null]) => void
   swipe: (approved: boolean, secondsRemaining: number) => void
   advanceCard: () => void
   addLeaderboardEntry: (name: string) => void
@@ -78,7 +79,23 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
   ...initial,
 
   startGame(language, difficulty, codeBotMode) {
-    set({ ...initial, language, difficulty, phase: 'playing', isCodeBotMode: codeBotMode })
+    const { currentSnippet, nextSnippet } = get()
+    set({
+      ...initial,
+      language,
+      difficulty,
+      phase: 'playing',
+      isCodeBotMode: codeBotMode,
+      currentSnippet: currentSnippet ?? null,
+      nextSnippet: nextSnippet ?? null,
+    })
+  },
+
+  setPrefetched([first, second]) {
+    set({
+      currentSnippet: first,
+      nextSnippet: second,
+    })
   },
 
   setCurrentSnippet(snippet) {
