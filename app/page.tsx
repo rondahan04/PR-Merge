@@ -108,7 +108,7 @@ export default function Home() {
               PR-Merge
             </h1>
           </div>
-          <p className="text-white/35 text-sm font-light tracking-widest uppercase">
+          <p className="text-white/35 text-xs font-light tracking-wider uppercase whitespace-nowrap">
             Swipe right to approve · left to reject
           </p>
         </div>
