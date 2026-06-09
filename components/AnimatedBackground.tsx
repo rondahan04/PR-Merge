@@ -1,13 +1,10 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { usePathname } from 'next/navigation'
 
 export default function AnimatedBackground() {
   const containerRef = useRef<HTMLDivElement>(null)
   const vantaRef = useRef<{ destroy: () => void } | null>(null)
-  const pathname = usePathname()
-  const isHome = pathname === '/'
 
   useEffect(() => {
     let mounted = true
@@ -20,8 +17,8 @@ export default function AnimatedBackground() {
       vantaRef.current = (window as any).VANTA.NET({
         el: containerRef.current,
         THREE,
-        mouseControls: isHome,
-        touchControls: isHome,
+        mouseControls: false,
+        touchControls: false,
         gyroControls: false,
         minHeight: 200,
         minWidth: 200,
@@ -33,7 +30,7 @@ export default function AnimatedBackground() {
       vantaRef.current?.destroy()
       vantaRef.current = null
     }
-  }, [isHome])
+  }, [])
 
   return (
     <div ref={containerRef} className="fixed inset-0 -z-10" aria-hidden="true" />

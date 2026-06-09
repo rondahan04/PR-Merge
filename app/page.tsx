@@ -118,12 +118,12 @@ export default function Home() {
           <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Language</p>
           <div className="grid grid-cols-4 gap-2">
             {LANGUAGES.map(({ value, label, icon }) => (
-              <div key={value} className="relative" style={{ minHeight: '72px' }}>
+              <motion.div key={value} whileTap={{ scale: 0.97 }} className="relative" style={{ minHeight: '72px' }}>
                 <LiquidGlass
                   cornerRadius={10}
                   onClick={() => setLanguage(value)}
                   padding="12px 6px"
-                  className="[&_.glass]:w-full cursor-pointer"
+                  className="[&_.glass]:w-full [&_.glass]:flex [&_.glass]:justify-center [&_.glass]:items-center cursor-pointer"
                   style={glassAbsolute()}
                 >
                   <div className="text-center w-full">
@@ -147,7 +147,7 @@ export default function Home() {
                     style={{ borderRadius: '10px', background: 'rgba(139,92,246,0.22)' }}
                   />
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -157,12 +157,12 @@ export default function Home() {
           <p className="text-xs text-white/40 uppercase tracking-widest mb-3 font-medium">Difficulty</p>
           <div className="space-y-2">
             {DIFFICULTIES.map(({ value, label, desc }) => (
-              <div key={value} className="relative" style={{ minHeight: '48px' }}>
+              <motion.div key={value} whileTap={{ scale: 0.97 }} className="relative" style={{ minHeight: '48px' }}>
                 <LiquidGlass
                   cornerRadius={10}
                   onClick={() => setDifficulty(value)}
                   padding="10px 14px"
-                  className="[&_.glass]:w-full cursor-pointer"
+                  className="[&_.glass]:w-full [&_.glass]:flex [&_.glass]:justify-center [&_.glass]:items-center cursor-pointer"
                   style={glassAbsolute()}
                 >
                   <div className="flex items-center justify-center gap-2 w-full">
@@ -181,7 +181,7 @@ export default function Home() {
                     style={{ borderRadius: '10px', background: 'rgba(139,92,246,0.22)' }}
                   />
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -198,7 +198,7 @@ export default function Home() {
             cornerRadius={10}
             onClick={() => setCodeBotMode((v) => !v)}
             padding="10px 14px"
-            className="[&_.glass]:w-full cursor-pointer"
+            className="[&_.glass]:w-full [&_.glass]:flex [&_.glass]:justify-center [&_.glass]:items-center cursor-pointer"
             style={glassAbsolute()}
           >
             <div className="flex items-center justify-between">
@@ -237,7 +237,7 @@ export default function Home() {
           <LiquidGlass
             cornerRadius={14}
             padding="14px"
-            className="[&_.glass]:w-full"
+            className="[&_.glass]:w-full [&_.glass]:flex [&_.glass]:justify-center [&_.glass]:items-center"
             style={glassAbsolute()}
           >
             <span
