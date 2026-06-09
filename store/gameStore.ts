@@ -144,8 +144,9 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
     const { currentSnippet, phase } = get()
     if (!currentSnippet || phase !== 'playing') return
 
-    // Left swipe on buggy code → enter Deconstruction Sandbox
-    if (!approved && !currentSnippet.is_good) {
+    // Left swipe on buggy code with known bugLines → enter Deconstruction Sandbox
+    // (AI-generated snippets carry bugLines: [] until Phase 2 updates the prompt)
+    if (!approved && !currentSnippet.is_good && currentSnippet.bugLines.length > 0) {
       set({
         phase: 'sandboxing',
         sandboxSecondsRemaining: secondsRemaining,

@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       ...parsed,
       id: `ai-${Date.now()}`,
       recycled: false,
+      bugLines: [], // populated in Phase 2 when prompt is updated
     })
   } catch {
     const fallback = getFromFallbackBank(language as FallbackLanguage)
