@@ -17,6 +17,7 @@ const SnippetSchema = z.object({
   snippet: z.string(),
   language: z.enum(['javascript', 'python', 'sql', 'java']),
   is_good: z.boolean(),
+  bugLines: z.array(z.number().int().positive()),
   issues: z.array(z.string()),
   explanation: z.string(),
 })
@@ -57,7 +58,6 @@ export async function POST(req: NextRequest) {
       ...parsed,
       id: `ai-${Date.now()}`,
       recycled: false,
-      bugLines: [], // populated in Phase 2 when prompt is updated
     })
   } catch {
     const fallback = getFromFallbackBank(language as FallbackLanguage)
