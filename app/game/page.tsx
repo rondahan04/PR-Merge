@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
 import SwipeCard from '@/components/SwipeCard'
+import DeepDiveSandbox from '@/components/DeepDiveSandbox'
 import Timer from '@/components/Timer'
 import ScoreBar from '@/components/ScoreBar'
 import RevealPanel from '@/components/RevealPanel'
 import GameOver from '@/components/GameOver'
-import type { Snippet } from '@/store/gameStore'
+import type { Snippet, JudgeResult } from '@/store/gameStore'
 
 const TIMER_SECONDS = 15
 
@@ -33,8 +34,12 @@ export default function GamePage() {
     swipe,
     advanceCard,
     setFetching,
+    selectSandboxLine,
+    submitSandboxAnswer,
+    timeout,
   } = useGameStore()
 
+  const [isJudging, setIsJudging] = useState(false)
   const timerSecondsRef = useRef(TIMER_SECONDS)
   const fetchedForCardRef = useRef(-1)
 
@@ -98,8 +103,46 @@ export default function GamePage() {
   }, [])
 
   const handleTimerExpire = useCallback(() => {
-    swipe(false, 0)
-  }, [swipe])
+    timeout()
+  }, [timeout])
+
+  const handleSandboxSubmit = useCallback(async (line: number) => {
+    if (!currentSnippet) return
+    selectSandboxLine(line)
+    setIsJudging(true)
+    try {
+      const res = await fetch('/api/judge-line', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-secret': process.env.NEXT_PUBLIC_API_SECRET ?? '',
+        },
+        body: JSON.stringify({
+          snippetId: currentSnippet.id,
+          snippet: currentSnippet.snippet,
+          language: currentSnippet.language,
+          issues: currentSnippet.issues,
+          bugLines: currentSnippet.bugLines,
+          selectedLine: line,
+        }),
+      })
+      if (!res.ok) throw new Error('API unavailable')
+      const result: JudgeResult = await res.json()
+      submitSandboxAnswer(result)
+    } catch {
+      // Fallback: resolve locally from bugLines until /api/judge-line is implemented
+      const isCorrect = currentSnippet.bugLines.includes(line)
+      submitSandboxAnswer({
+        isCorrect,
+        feedback: isCorrect
+          ? 'Correct — that line contains the bug.'
+          : `Not quite. The bug is on line ${currentSnippet.bugLines[0] ?? '?'}.`,
+        explanation: currentSnippet.explanation,
+      })
+    } finally {
+      setIsJudging(false)
+    }
+  }, [currentSnippet, selectSandboxLine, submitSandboxAnswer])
 
   const handleRevealContinue = useCallback(() => {
     advanceCard()
@@ -147,6 +190,15 @@ export default function GamePage() {
               snippet={currentSnippet}
               onSwipe={handleSwipe}
               disabled={false}
+            />
+          )}
+
+          {phase === 'sandboxing' && currentSnippet && (
+            <DeepDiveSandbox
+              key={`sandbox-${currentSnippet.id}`}
+              snippet={currentSnippet}
+              onSubmit={handleSandboxSubmit}
+              isJudging={isJudging}
             />
           )}
 
