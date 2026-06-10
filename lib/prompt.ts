@@ -36,6 +36,7 @@ Respond with a JSON object matching this exact schema:
   "snippet": "the code as a string",
   "language": "${language}",
   "is_good": ${isGood},
+  "bugLines": [1-indexed line numbers of the lines that contain the bug; empty array if is_good is true],
   "issues": ["list of issues, empty array if is_good is true"],
   "explanation": "1-3 sentence explanation of why this code is good or bad"
 }`

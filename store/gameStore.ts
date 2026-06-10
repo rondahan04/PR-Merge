@@ -2,11 +2,18 @@ import { create } from 'zustand'
 import { calculateScore } from '@/lib/scoring'
 import { computeCodeBotDecision } from '@/lib/codebot'
 
+export interface JudgeResult {
+  isCorrect: boolean
+  feedback: string
+  explanation: string
+}
+
 export interface Snippet {
   id: string
   snippet: string
   language: 'javascript' | 'python' | 'sql' | 'java'
   is_good: boolean
+  bugLines: number[]
   issues: string[]
   explanation: string
   recycled?: boolean
@@ -22,7 +29,7 @@ export interface LeaderboardEntry {
 
 export type Difficulty = 'junior' | 'mid' | 'senior'
 export type Language = 'javascript' | 'python' | 'sql' | 'java'
-export type Phase = 'idle' | 'playing' | 'revealing' | 'gameover'
+export type Phase = 'idle' | 'playing' | 'sandboxing' | 'revealing' | 'gameover'
 
 interface GameState {
   score: number
@@ -40,6 +47,9 @@ interface GameState {
   leaderboard: LeaderboardEntry[]
   isFetching: boolean
   isCodeBotMode: boolean
+  sandboxSelectedLine: number | null
+  sandboxJudgeResult: JudgeResult | null
+  sandboxSecondsRemaining: number
 }
 
 interface GameActions {
@@ -52,6 +62,9 @@ interface GameActions {
   addLeaderboardEntry: (name: string) => void
   setFetching: (v: boolean) => void
   resetGame: () => void
+  selectSandboxLine: (line: number) => void
+  submitSandboxAnswer: (judgeResult: JudgeResult) => void
+  timeout: () => void
 }
 
 const CARDS_PER_ROUND = 10
@@ -73,6 +86,22 @@ const initial: GameState = {
   leaderboard: [],
   isFetching: false,
   isCodeBotMode: false,
+  sandboxSelectedLine: null,
+  sandboxJudgeResult: null,
+  sandboxSecondsRemaining: 0,
+}
+
+function adjustDifficulty(
+  difficulty: Difficulty,
+  history: Array<{ isCorrect: boolean }>,
+  newCardIndex: number,
+): Difficulty {
+  if (newCardIndex % DIFFICULTY_WINDOW !== 0) return difficulty
+  const windowCorrect = history.slice(-DIFFICULTY_WINDOW).filter((h) => h.isCorrect).length
+  const accuracy = windowCorrect / DIFFICULTY_WINDOW
+  if (accuracy > 0.8 && difficulty !== 'senior') return difficulty === 'junior' ? 'mid' : 'senior'
+  if (accuracy < 0.4 && difficulty !== 'junior') return difficulty === 'senior' ? 'mid' : 'junior'
+  return difficulty
 }
 
 export const useGameStore = create<GameState & GameActions>()((set, get) => ({
@@ -112,29 +141,30 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
   },
 
   swipe(approved: boolean, secondsRemaining: number) {
-    const { currentSnippet, phase, score, streak, history, cardIndex, correctCount, difficulty } = get()
+    const { currentSnippet, phase } = get()
     if (!currentSnippet || phase !== 'playing') return
 
+    // Left swipe on buggy code with known bugLines → enter Deconstruction Sandbox
+    // (AI-generated snippets carry bugLines: [] until Phase 2 updates the prompt)
+    if (!approved && !currentSnippet.is_good && currentSnippet.bugLines.length > 0) {
+      set({
+        phase: 'sandboxing',
+        sandboxSecondsRemaining: secondsRemaining,
+        sandboxSelectedLine: null,
+        sandboxJudgeResult: null,
+      })
+      return
+    }
+
+    const { score, streak, history, cardIndex, correctCount, difficulty } = get()
     const isCorrect = approved === currentSnippet.is_good
     const { points, newStreak } = calculateScore(isCorrect, secondsRemaining, streak)
     const newCardIndex = cardIndex + 1
     const newCorrectCount = correctCount + (isCorrect ? 1 : 0)
-
     const newHistory = [
       ...history,
       { snippetId: currentSnippet.id, isCorrect, timeUsed: 15 - secondsRemaining },
     ]
-
-    let newDifficulty = difficulty
-    if (newCardIndex % DIFFICULTY_WINDOW === 0) {
-      const windowCorrect = newHistory.slice(-DIFFICULTY_WINDOW).filter((h) => h.isCorrect).length
-      const accuracy = windowCorrect / DIFFICULTY_WINDOW
-      if (accuracy > 0.8 && difficulty !== 'senior') {
-        newDifficulty = difficulty === 'junior' ? 'mid' : 'senior'
-      } else if (accuracy < 0.4 && difficulty !== 'junior') {
-        newDifficulty = difficulty === 'senior' ? 'mid' : 'junior'
-      }
-    }
 
     set({
       score: score + points,
@@ -142,9 +172,63 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
       history: newHistory,
       cardIndex: newCardIndex,
       correctCount: newCorrectCount,
-      difficulty: newDifficulty,
+      difficulty: adjustDifficulty(difficulty, newHistory, newCardIndex),
       phase: 'revealing',
       lastAnswer: { isCorrect, pointsEarned: points },
+    })
+  },
+
+  selectSandboxLine(line: number) {
+    set({ sandboxSelectedLine: line })
+  },
+
+  submitSandboxAnswer(judgeResult: JudgeResult) {
+    const { currentSnippet, score, streak, history, cardIndex, correctCount, difficulty, sandboxSecondsRemaining } = get()
+    if (!currentSnippet) return
+
+    // Correct: left-swipe on buggy code = right call; 1.5x bonus for pinpointing the exact line
+    const { points, newStreak } = calculateScore(true, sandboxSecondsRemaining, streak)
+    const finalPoints = Math.round(points * (judgeResult.isCorrect ? 1.5 : 1.0))
+    const newCardIndex = cardIndex + 1
+    const newHistory = [
+      ...history,
+      { snippetId: currentSnippet.id, isCorrect: true, timeUsed: 15 - sandboxSecondsRemaining },
+    ]
+
+    set({
+      score: score + finalPoints,
+      streak: newStreak,
+      history: newHistory,
+      cardIndex: newCardIndex,
+      correctCount: correctCount + 1,
+      difficulty: adjustDifficulty(difficulty, newHistory, newCardIndex),
+      phase: 'revealing',
+      lastAnswer: { isCorrect: true, pointsEarned: finalPoints },
+      sandboxJudgeResult: judgeResult,
+    })
+  },
+
+  timeout() {
+    // Timer expired while in playing phase: wrong answer, no sandbox
+    const { currentSnippet, phase, score, streak, history, cardIndex, correctCount, difficulty } = get()
+    if (!currentSnippet || phase !== 'playing') return
+
+    const { points, newStreak } = calculateScore(false, 0, streak)
+    const newCardIndex = cardIndex + 1
+    const newHistory = [
+      ...history,
+      { snippetId: currentSnippet.id, isCorrect: false, timeUsed: 15 },
+    ]
+
+    set({
+      score: score + points,
+      streak: newStreak,
+      history: newHistory,
+      cardIndex: newCardIndex,
+      correctCount,
+      difficulty: adjustDifficulty(difficulty, newHistory, newCardIndex),
+      phase: 'revealing',
+      lastAnswer: { isCorrect: false, pointsEarned: points },
     })
   },
 

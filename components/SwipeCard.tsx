@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { memo, useMemo, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
+import { tokenizeSnippet, renderTokens, LANG_LABELS } from '@/lib/prism'
 import type { Snippet } from '@/store/gameStore'
 
 interface Props {
@@ -19,39 +20,17 @@ const glassCard: React.CSSProperties = {
   borderRadius: '16px',
 }
 
-export default function SwipeCard({ snippet, onSwipe, disabled }: Props) {
+function SwipeCard({ snippet, onSwipe, disabled }: Props) {
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-200, 200], [-20, 20])
   const greenOpacity = useTransform(x, [0, 160], [0, 0.45])
   const redOpacity = useTransform(x, [-160, 0], [0.45, 0])
-  const codeRef = useRef<HTMLElement>(null)
   const swipedRef = useRef(false)
 
-  const prismLang = snippet.language === 'python' ? 'python' :
-                    snippet.language === 'java' ? 'java' :
-                    snippet.language === 'sql' ? 'sql' : 'javascript'
-
-  const langLabel = snippet.language === 'python' ? 'Python' :
-                    snippet.language === 'java' ? 'Java' :
-                    snippet.language === 'sql' ? 'SQL' : 'JavaScript'
-
-  useEffect(() => {
-    if (!codeRef.current) return
-    import('prismjs').then((Prism) => {
-      const loadLang = () => {
-        if (codeRef.current) Prism.highlightElement(codeRef.current)
-      }
-      if (prismLang === 'python') {
-        import('prismjs/components/prism-python' as string).then(loadLang).catch(loadLang)
-      } else if (prismLang === 'java') {
-        import('prismjs/components/prism-java' as string).then(loadLang).catch(loadLang)
-      } else if (prismLang === 'sql') {
-        import('prismjs/components/prism-sql' as string).then(loadLang).catch(loadLang)
-      } else {
-        import('prismjs/components/prism-javascript' as string).then(loadLang).catch(loadLang)
-      }
-    })
-  }, [snippet.snippet, prismLang])
+  const tokens = useMemo(
+    () => tokenizeSnippet(snippet.snippet, snippet.language),
+    [snippet.snippet, snippet.language]
+  )
 
   const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     if (disabled || swipedRef.current) return
@@ -74,7 +53,7 @@ export default function SwipeCard({ snippet, onSwipe, disabled }: Props) {
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.7}
-        style={{ x, rotate }}
+        style={{ x, rotate, willChange: 'transform' }}
         onDragEnd={handleDragEnd}
         whileDrag={{ cursor: 'grabbing' }}
         className="cursor-grab"
@@ -95,17 +74,20 @@ export default function SwipeCard({ snippet, onSwipe, disabled }: Props) {
           {/* content */}
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
-              <span className="text-xs font-mono text-white/40 uppercase tracking-widest">{langLabel}</span>
+              <span className="text-xs font-mono text-white/40 uppercase tracking-widest">
+                {LANG_LABELS[snippet.language]}
+              </span>
               {snippet.recycled && (
                 <span className="text-xs text-white/30 font-light tracking-wide">recycled</span>
               )}
             </div>
 
             <div className="p-4">
-              <pre className="text-sm leading-relaxed m-0" style={{ whiteSpace: 'pre', overflowX: 'auto', overflowY: 'visible' }}>
-                <code ref={codeRef} className={`language-${prismLang}`}>
-                  {snippet.snippet}
-                </code>
+              <pre
+                className="text-sm leading-relaxed m-0"
+                style={{ whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}
+              >
+                <code className={`language-${snippet.language}`}>{renderTokens(tokens)}</code>
               </pre>
             </div>
           </div>
@@ -120,3 +102,5 @@ export default function SwipeCard({ snippet, onSwipe, disabled }: Props) {
     </div>
   )
 }
+
+export default memo(SwipeCard)
