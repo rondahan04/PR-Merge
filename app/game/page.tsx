@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
+import { useShallow } from 'zustand/react/shallow'
 import { useGameStore } from '@/store/gameStore'
+import { withRetry } from '@/lib/retry'
 import SwipeCard from '@/components/SwipeCard'
 import DeepDiveSandbox from '@/components/DeepDiveSandbox'
 import Timer from '@/components/Timer'
@@ -29,6 +31,7 @@ export default function GamePage() {
     codebotDecision,
     isCodeBotMode,
     isFetching,
+    sandboxJudgeResult,
     setCurrentSnippet,
     setNextSnippet,
     swipe,
@@ -37,9 +40,35 @@ export default function GamePage() {
     selectSandboxLine,
     submitSandboxAnswer,
     timeout,
-  } = useGameStore()
+  } = useGameStore(
+    useShallow((s) => ({
+      phase: s.phase,
+      score: s.score,
+      streak: s.streak,
+      cardIndex: s.cardIndex,
+      currentSnippet: s.currentSnippet,
+      nextSnippet: s.nextSnippet,
+      lastAnswer: s.lastAnswer,
+      difficulty: s.difficulty,
+      language: s.language,
+      codebotDecision: s.codebotDecision,
+      isCodeBotMode: s.isCodeBotMode,
+      isFetching: s.isFetching,
+      sandboxJudgeResult: s.sandboxJudgeResult,
+      setCurrentSnippet: s.setCurrentSnippet,
+      setNextSnippet: s.setNextSnippet,
+      swipe: s.swipe,
+      advanceCard: s.advanceCard,
+      setFetching: s.setFetching,
+      selectSandboxLine: s.selectSandboxLine,
+      submitSandboxAnswer: s.submitSandboxAnswer,
+      timeout: s.timeout,
+    }))
+  )
 
   const [isJudging, setIsJudging] = useState(false)
+  const [fetchFailed, setFetchFailed] = useState(false)
+  const [retryNonce, setRetryNonce] = useState(0)
   const timerSecondsRef = useRef(TIMER_SECONDS)
   const fetchedForCardRef = useRef(-1)
 
@@ -60,16 +89,24 @@ export default function GamePage() {
     }
   }, [language, difficulty])
 
-  // Initial fetch: card 1 + card 2 in parallel
+  // Initial fetch: card 1 + card 2 in parallel, with bounded retry + backoff.
+  // If everything fails (rate limit, network down), surface the retry button
+  // instead of hanging on the loading card forever.
   useEffect(() => {
     if (phase !== 'playing' || currentSnippet !== null) return
+    let cancelled = false
 
-    Promise.all([fetchSnippet(), fetchSnippet()]).then(([first, second]) => {
-      if (first) setCurrentSnippet(first)
-      if (second) setNextSnippet(second)
+    Promise.all([withRetry(fetchSnippet), withRetry(fetchSnippet)]).then(([first, second]) => {
+      if (cancelled) return
+      const got = [first, second].filter((s): s is Snippet => s !== null)
+      if (got[0]) setCurrentSnippet(got[0])
+      if (got[1]) setNextSnippet(got[1])
+      if (got.length === 0) setFetchFailed(true)
     })
+
+    return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase])
+  }, [phase, retryNonce])
 
   // Prefetch N+2 whenever cardIndex changes and we have a currentSnippet
   useEffect(() => {
@@ -77,10 +114,13 @@ export default function GamePage() {
     if (fetchedForCardRef.current === cardIndex) return
     fetchedForCardRef.current = cardIndex
 
-    fetchSnippet().then((snippet) => {
+    withRetry(fetchSnippet).then((snippet) => {
       setNextSnippet(snippet)
+      // If the player is already waiting on this fetch (advanceCard found no
+      // prefetched card), a null result would strand them — show retry UI.
+      if (!snippet && useGameStore.getState().isFetching) setFetchFailed(true)
     })
-  }, [cardIndex, phase, currentSnippet, fetchSnippet, setNextSnippet])
+  }, [cardIndex, phase, currentSnippet, fetchSnippet, setNextSnippet, retryNonce])
 
   // When isFetching and nextSnippet arrives, advance
   useEffect(() => {
@@ -148,6 +188,12 @@ export default function GamePage() {
     advanceCard()
   }, [advanceCard])
 
+  const handleRetryFetch = useCallback(() => {
+    setFetchFailed(false)
+    fetchedForCardRef.current = -1
+    setRetryNonce((n) => n + 1)
+  }, [])
+
   // Auto-advance revealing phase after 2000ms
   useEffect(() => {
     if (phase !== 'revealing') return
@@ -212,7 +258,26 @@ export default function GamePage() {
                 border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
-              <p className="text-white/30 text-sm font-light tracking-wide">Fetching next card...</p>
+              {fetchFailed ? (
+                <div className="flex flex-col items-center gap-3 px-6 text-center">
+                  <p className="text-white/40 text-sm font-light tracking-wide">
+                    Couldn&apos;t load the next card.
+                  </p>
+                  <button
+                    onClick={handleRetryFetch}
+                    className="px-5 py-2 rounded-lg text-sm font-semibold tracking-widest uppercase cursor-pointer"
+                    style={{
+                      background: 'rgba(139,92,246,0.32)',
+                      border: '1px solid rgba(167,139,250,0.45)',
+                      color: '#ddd6fe',
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <p className="text-white/30 text-sm font-light tracking-wide">Fetching next card...</p>
+              )}
             </div>
           )}
 
@@ -224,6 +289,7 @@ export default function GamePage() {
               pointsEarned={lastAnswer.pointsEarned}
               codebotDecision={codebotDecision}
               isCodeBotMode={isCodeBotMode}
+              sandboxJudgeResult={sandboxJudgeResult}
               onContinue={handleRevealContinue}
             />
           )}

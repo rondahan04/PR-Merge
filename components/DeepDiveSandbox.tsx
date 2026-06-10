@@ -1,22 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { memo, useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { tokenizeLines, renderTokens, LANG_LABELS } from '@/lib/prism'
 import type { Snippet } from '@/store/gameStore'
-
-// Safe per-token renderer — no dangerouslySetInnerHTML
-type PToken = { type: string; content: string | PToken[] } | string
-
-function renderTokens(tokens: PToken[]): React.ReactNode[] {
-  return tokens.map((t, i) => {
-    if (typeof t === 'string') return t
-    return (
-      <span key={i} className={`token ${t.type}`}>
-        {Array.isArray(t.content) ? renderTokens(t.content as PToken[]) : t.content}
-      </span>
-    )
-  })
-}
 
 interface Props {
   snippet: Snippet
@@ -33,41 +20,13 @@ const glassCard: React.CSSProperties = {
   borderRadius: '16px',
 }
 
-export default function DeepDiveSandbox({ snippet, onSubmit, isJudging }: Props) {
+function DeepDiveSandbox({ snippet, onSubmit, isJudging }: Props) {
   const [selectedLine, setSelectedLine] = useState<number | null>(null)
-  const [highlighted, setHighlighted] = useState<React.ReactNode[][]>([])
 
-  const lines = snippet.snippet.replace(/\r\n/g, '\n').split('\n')
-  const prismLang = snippet.language === 'python' ? 'python'
-    : snippet.language === 'java' ? 'java'
-    : snippet.language === 'sql' ? 'sql' : 'javascript'
-  const langLabel = snippet.language === 'python' ? 'Python'
-    : snippet.language === 'java' ? 'Java'
-    : snippet.language === 'sql' ? 'SQL' : 'JavaScript'
-
-  useEffect(() => {
-    let cancelled = false
-    import('prismjs').then(async (Prism) => {
-      if (prismLang === 'python') await import('prismjs/components/prism-python' as string).catch(() => {})
-      else if (prismLang === 'java') await import('prismjs/components/prism-java' as string).catch(() => {})
-      else if (prismLang === 'sql') await import('prismjs/components/prism-sql' as string).catch(() => {})
-      else await import('prismjs/components/prism-javascript' as string).catch(() => {})
-
-      if (cancelled) return
-      const grammar = (Prism.languages as Record<string, unknown>)[prismLang]
-      if (!grammar) return
-
-      const result = lines.map((line) => {
-        const tokens = Prism.tokenize(line || ' ', grammar as Prism.Grammar) as PToken[]
-        return renderTokens(tokens)
-      })
-      setHighlighted(result)
-    })
-    return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snippet.snippet, prismLang])
-
-  const renderedLines = highlighted.length === lines.length ? highlighted : lines.map((l) => [l])
+  const renderedLines = useMemo(
+    () => tokenizeLines(snippet.snippet, snippet.language).map(renderTokens),
+    [snippet.snippet, snippet.language]
+  )
 
   return (
     <motion.div
@@ -79,7 +38,7 @@ export default function DeepDiveSandbox({ snippet, onSubmit, isJudging }: Props)
       <div style={glassCard}>
         {/* header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
-          <span className="text-xs font-mono text-white/40 uppercase tracking-widest">{langLabel}</span>
+          <span className="text-xs font-mono text-white/40 uppercase tracking-widest">{LANG_LABELS[snippet.language]}</span>
           <span className="text-xs text-purple-300/60 font-light tracking-wide">tap the buggy line</span>
         </div>
 
@@ -105,7 +64,7 @@ export default function DeepDiveSandbox({ snippet, onSubmit, isJudging }: Props)
                 >
                   {lineNum}
                 </span>
-                <span className="flex-1 whitespace-pre text-white/80">
+                <span className="flex-1 min-w-0 whitespace-pre-wrap break-words text-white/80">
                   {lineNodes}
                 </span>
               </button>
@@ -148,3 +107,5 @@ export default function DeepDiveSandbox({ snippet, onSubmit, isJudging }: Props)
     </motion.div>
   )
 }
+
+export default memo(DeepDiveSandbox)

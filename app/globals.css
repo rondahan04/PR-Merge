@@ -21,10 +21,9 @@ pre[class*="language-"] {
   color: #cdd6f4;
   background: none;
   text-align: left;
-  white-space: pre;
+  white-space: pre-wrap;
   word-spacing: normal;
-  word-break: normal;
-  word-wrap: normal;
+  overflow-wrap: break-word;
   font-size: 0.85em;
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   line-height: 1.6;
